@@ -1,0 +1,588 @@
+openapi: 3.2.1
+info:
+  title: Mingest - Mail Ingestion Service
+  version: 1.0.0
+  summary: Ingests a mail archive and serves its progress and top senders.
+  description: |
+    Mingest ingests a mail dataset and counts its messages and senders. The
+    dataset is a gzipped tar with one email per file. Copies of one email
+    count as one message.
+
+    Start with POST /start, follow GET /status, read GET /top-senders.
+
+    Errors are listed under x-problem-types. Changes are additive.
+x-problem-types:
+  - type: about:blank
+    status: [404, 405, 406, 500]
+    when: An unknown path, a method the path doesn't allow, an Accept the server can't meet, or a server error. The title is the status phrase.
+  - type: tag:mingest,2026:ingestion-running
+    status: [409]
+    when: POST /start while an ingestion is running. The ingestion member holds its status.
+  - type: tag:mingest,2026:too-many-streams
+    status: [503]
+    when: The cap on status streams is reached. Retry-After says when to try again.
+servers:
+  - url: http://localhost:8080
+    description: Local
+tags:
+  - name: ingestion
+    description: Starting an ingestion and reading its results.
+paths:
+  /start:
+    post:
+      operationId: startIngestion
+      tags: [ingestion]
+      summary: Start an ingestion
+      description: |
+        Starts a fresh ingestion of the dataset unless one is running. The
+        request body is ignored. Follow the ingestion at `GET /status`.
+      responses:
+        "202":
+          description: The ingestion started. The body is its first status.
+          headers:
+            Location:
+              $ref: "#/components/headers/Location"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionStatus"
+              examples:
+                started:
+                  summary: A fresh ingestion
+                  value:
+                    ingestion_id: 01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1
+                    state: running
+                    mail_files_processed: 0
+                    messages_processed: 0
+                    senders: 0
+                    messages_without_sender: 0
+                    bytes_read: 0
+                    bytes_total: 443254787
+                    progress_percent: 0.0
+                    resumes: 0
+                    started_at: "2026-11-01T09:30:12Z"
+                    updated_at: "2026-11-01T09:30:12Z"
+                    finished_at: null
+                    error: null
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "409":
+          description: An ingestion is already running. The problem holds its status.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/IngestionRunningProblem"
+              examples:
+                running:
+                  summary: An ingestion is running
+                  value:
+                    type: tag:mingest,2026:ingestion-running
+                    title: Ingestion running
+                    status: 409
+                    detail: An ingestion is already running. Follow it at /status.
+                    trace_id: 4bf92f3577b34da6a3ce929d0e0e4736
+                    ingestion:
+                      ingestion_id: 01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1
+                      state: running
+                      mail_files_processed: 217312
+                      messages_processed: 106947
+                      senders: 9861
+                      messages_without_sender: 1
+                      bytes_read: 186170011
+                      bytes_total: 443254787
+                      progress_percent: 42.0
+                      resumes: 0
+                      started_at: "2026-11-01T09:30:12Z"
+                      updated_at: "2026-11-01T09:31:18Z"
+                      finished_at: null
+                      error: null
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /status:
+    get:
+      operationId: getStatus
+      tags: [ingestion]
+      summary: Read or follow the ingestion status
+      description: |
+        Returns the ingestion status as JSON. Send Accept: text/event-stream to
+        get a stream instead, with an event on each change. The stream ends when
+        the ingestion is done or failed.
+      parameters:
+        - $ref: "#/components/parameters/LastEventID"
+      responses:
+        "200":
+          description: |
+            The status as JSON or as a stream. JSON wins whenever Accept allows
+            it; the stream is served when Accept asks for it and not for JSON.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+            Vary:
+              $ref: "#/components/headers/Vary"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngestionStatus"
+              examples:
+                idle:
+                  summary: No ingestion has run
+                  value:
+                    ingestion_id: null
+                    state: idle
+                    mail_files_processed: 0
+                    messages_processed: 0
+                    senders: 0
+                    messages_without_sender: 0
+                    bytes_read: 0
+                    bytes_total: null
+                    progress_percent: null
+                    resumes: 0
+                    started_at: null
+                    updated_at: null
+                    finished_at: null
+                    error: null
+                done:
+                  summary: The whole dataset ingested
+                  value:
+                    ingestion_id: 01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1
+                    state: done
+                    mail_files_processed: 517401
+                    messages_processed: 254791
+                    senders: 20325
+                    messages_without_sender: 1
+                    bytes_read: 443254787
+                    bytes_total: 443254787
+                    progress_percent: 100.0
+                    resumes: 0
+                    started_at: "2026-11-01T09:30:12Z"
+                    updated_at: "2026-11-01T09:32:48Z"
+                    finished_at: "2026-11-01T09:32:48Z"
+                    error: null
+                failed:
+                  summary: An ingestion that lost its source
+                  value:
+                    ingestion_id: 01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1
+                    state: failed
+                    mail_files_processed: 217312
+                    messages_processed: 106947
+                    senders: 9861
+                    messages_without_sender: 1
+                    bytes_read: 186170011
+                    bytes_total: 443254787
+                    progress_percent: 42.0
+                    resumes: 5
+                    started_at: "2026-11-01T09:30:12Z"
+                    updated_at: "2026-11-01T09:31:18Z"
+                    finished_at: "2026-11-01T09:33:51Z"
+                    error:
+                      code: source_unreachable
+                      message: "dataset source: GET https://www.cs.cmu.edu/~enron/enron_mail_20150507.tar.gz: connection refused"
+            text/event-stream:
+              itemSchema:
+                type: object
+                description: |
+                  One event. The id is `<ingestion_id>:<revision>`, absent while
+                  `idle`. `retry` arrives once, before the first event, and a
+                  ping comment every 15 s.
+                required: [event, data]
+                properties:
+                  event:
+                    type: string
+                    const: status
+                  id:
+                    type: string
+                    pattern: "^[0-9a-f-]{36}:[0-9]+$"
+                  data:
+                    type: string
+                    contentMediaType: application/json
+                    contentSchema:
+                      $ref: "#/components/schemas/IngestionStatus"
+                  retry:
+                    type: integer
+                    minimum: 0
+              examples:
+                stream:
+                  summary: A stream from the middle of an ingestion to its end
+                  serializedValue: |+
+                    retry: 3000
+
+                    event: status
+                    id: 01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1:118
+                    data: {"ingestion_id":"01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1","state":"running","mail_files_processed":217312,"messages_processed":106947,"senders":9861,"messages_without_sender":1,"bytes_read":186170011,"bytes_total":443254787,"progress_percent":42.0,"resumes":0,"started_at":"2026-11-01T09:30:12Z","updated_at":"2026-11-01T09:31:18Z","finished_at":null,"error":null}
+
+                    : ping
+
+                    event: status
+                    id: 01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1:284
+                    data: {"ingestion_id":"01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1","state":"done","mail_files_processed":517401,"messages_processed":254791,"senders":20325,"messages_without_sender":1,"bytes_read":443254787,"bytes_total":443254787,"progress_percent":100.0,"resumes":0,"started_at":"2026-11-01T09:30:12Z","updated_at":"2026-11-01T09:32:48Z","finished_at":"2026-11-01T09:32:48Z","error":null}
+
+        "204":
+          description: |
+            The reconnect's `Last-Event-ID` is the final event of a finished
+            ingestion, so there is nothing more to send.
+          headers:
+            Vary:
+              $ref: "#/components/headers/Vary"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "406":
+          description: The `Accept` header allows neither JSON nor an event stream.
+          headers:
+            Vary:
+              $ref: "#/components/headers/Vary"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                notAcceptable:
+                  summary: Accept is text/html only
+                  value:
+                    type: about:blank
+                    title: Not Acceptable
+                    status: 406
+                    detail: GET /status serves application/json and text/event-stream.
+                    trace_id: 4bf92f3577b34da6a3ce929d0e0e4736
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: The cap on concurrent streams is reached. Poll as JSON, or retry the stream later.
+          headers:
+            Retry-After:
+              $ref: "#/components/headers/RetryAfter"
+            Vary:
+              $ref: "#/components/headers/Vary"
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+              examples:
+                tooManyStreams:
+                  summary: The stream cap is reached
+                  value:
+                    type: tag:mingest,2026:too-many-streams
+                    title: Too many streams
+                    status: 503
+                    detail: The server has as many status streams open as it allows. Retry later, or poll GET /status as JSON.
+  /top-senders:
+    get:
+      operationId: getTopSenders
+      tags: [ingestion]
+      summary: Read the top senders
+      description: |
+        Returns up to ten senders with the most messages in the current
+        ingestion. The list can change while it runs and is final once state
+        is done.
+      responses:
+        "200":
+          description: The top senders.
+          headers:
+            Cache-Control:
+              $ref: "#/components/headers/CacheControl"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TopSenders"
+              examples:
+                done:
+                  summary: The whole dataset ingested
+                  value:
+                    ingestion_id: 01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1
+                    state: done
+                    updated_at: "2026-11-01T09:32:48Z"
+                    top_senders:
+                      - { sender: jeff.dasovich@enron.com, messages: 5530 }
+                      - { sender: kay.mann@enron.com, messages: 4887 }
+                      - { sender: sara.shackleton@enron.com, messages: 4449 }
+                      - { sender: tana.jones@enron.com, messages: 4171 }
+                      - { sender: vince.kaminski@enron.com, messages: 3975 }
+                      - { sender: pete.davis@enron.com, messages: 3933 }
+                      - { sender: chris.germany@enron.com, messages: 3638 }
+                      - { sender: matthew.lenhart@enron.com, messages: 2781 }
+                      - { sender: debra.perlingiere@enron.com, messages: 2447 }
+                      - { sender: gerald.nemec@enron.com, messages: 2231 }
+                idle:
+                  summary: No ingestion has run
+                  value:
+                    ingestion_id: null
+                    state: idle
+                    updated_at: null
+                    top_senders: []
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  schemas:
+    IngestionStatus:
+      type: object
+      description: |
+        The progress of the current ingestion so far.
+        While `idle`, the id, the timestamps, `bytes_total`, `progress_percent`
+        and `error` are `null`, and the counts are zero.
+      required:
+        - ingestion_id
+        - state
+        - mail_files_processed
+        - messages_processed
+        - senders
+        - messages_without_sender
+        - bytes_read
+        - bytes_total
+        - progress_percent
+        - resumes
+        - started_at
+        - updated_at
+        - finished_at
+        - error
+      properties:
+        ingestion_id:
+          type: [string, "null"]
+          format: uuid
+          description: The ingestion's id, a UUIDv7. `null` while `idle`.
+          examples: [01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1]
+        state:
+          type: string
+          enum: [idle, running, done, failed]
+          description: |
+            `idle` before any ingestion, `running`, `done` once finished, or
+            `failed`.
+        mail_files_processed:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Mail files committed.
+        messages_processed:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Messages committed. Folder copies of one email count once.
+        senders:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Distinct senders so far.
+        messages_without_sender:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Messages whose `From` yields no sender.
+        bytes_read:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Compressed bytes of the dataset read so far.
+        bytes_total:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: The dataset's compressed size. `null` when the source doesn't report it.
+        progress_percent:
+          type: [number, "null"]
+          minimum: 0
+          maximum: 100
+          description: |
+            `bytes_read / bytes_total` as a percentage, rounded down to one
+            decimal, so `100.0` means every byte was read. `null` when
+            `bytes_total` is unknown.
+        resumes:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Times this ingestion resumed after a restart or a lost source,
+            without starting over.
+        started_at:
+          type: [string, "null"]
+          format: date-time
+          description: When the ingestion started, in UTC.
+        updated_at:
+          type: [string, "null"]
+          format: date-time
+          description: When the progress last changed, in UTC.
+        finished_at:
+          type: [string, "null"]
+          format: date-time
+          description: When the ingestion became `done` or `failed`, in UTC.
+        error:
+          description: Why the ingestion failed. Set only when `failed`.
+          oneOf:
+            - $ref: "#/components/schemas/IngestionError"
+            - type: "null"
+    IngestionError:
+      type: object
+      description: Why an ingestion failed.
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            [
+              disk_full,
+              source_unreachable,
+              source_changed,
+              archive_corrupt,
+              internal,
+            ]
+          description: |
+            - `disk_full`: the data volume has too little free space left.
+            - `source_unreachable`: the source kept failing through 5 retries.
+            - `source_changed`: a resume found a different archive, or one it
+              couldn't check.
+            - `archive_corrupt`: the archive isn't a valid gzipped tar.
+            - `internal`: an unexpected error; the log holds the cause.
+        message:
+          type: string
+          description: A human-readable explanation.
+    TopSenders:
+      type: object
+      description: |
+        Up to ten senders with the most messages, ordered by `messages`
+        descending and then `sender` ascending. It's final once `state` is
+        `done`, and empty while `idle`. Messages without a sender never appear.
+      required: [ingestion_id, state, updated_at, top_senders]
+      properties:
+        ingestion_id:
+          type: [string, "null"]
+          format: uuid
+          description: The ingestion the list belongs to. `null` while `idle`.
+          examples: [01a19671-f0a0-7d41-aa5e-39c0b4f2d6e1]
+        state:
+          type: string
+          enum: [idle, running, done, failed]
+          description: The ingestion's state when the list was read.
+        updated_at:
+          type: [string, "null"]
+          format: date-time
+          description: When the list last changed, in UTC.
+        top_senders:
+          type: array
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/TopSender"
+    TopSender:
+      type: object
+      description: A sender and its count of messages.
+      required: [sender, messages]
+      properties:
+        sender:
+          type: string
+          minLength: 1
+          description: The sender, a normalized email address.
+        messages:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Messages from this sender.
+    Problem:
+      type: object
+      description: |
+        An error. Each type may add members of its own. `trace_id` names the
+        occurrence: the server logs the cause on a line with the same id.
+      required: [type, title, status, detail]
+      properties:
+        type:
+          type: string
+          format: uri
+          default: about:blank
+          description: The problem type, `about:blank` or a `tag:mingest,2026:` URI.
+        title:
+          type: string
+          description: A short summary of the problem type.
+          examples: [Ingestion running]
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+          description: The HTTP status code.
+        detail:
+          type: string
+          description: An explanation of this occurrence.
+        trace_id:
+          type: string
+          pattern: "^[0-9a-f]{32}$"
+          description: The trace id of the request. Absent on a request for a stream, which isn't traced.
+    IngestionRunningProblem:
+      description: The `tag:mingest,2026:ingestion-running` problem, with the running ingestion's status.
+      allOf:
+        - $ref: "#/components/schemas/Problem"
+        - type: object
+          required: [ingestion]
+          properties:
+            ingestion:
+              description: The status of the running ingestion.
+              allOf:
+                - $ref: "#/components/schemas/IngestionStatus"
+                - type: object
+                  properties:
+                    state:
+                      const: running
+  parameters:
+    LastEventID:
+      name: Last-Event-ID
+      in: header
+      required: false
+      description: |
+        The id of the last event the client got. That event isn't sent again,
+        and if it was the final one, the answer is 204.
+      schema:
+        type: string
+  headers:
+    Location:
+      description: Where to follow the ingestion.
+      schema:
+        type: string
+        const: /status
+    CacheControl:
+      description: The status changes with every commit, so it's never cached.
+      schema:
+        type: string
+        const: no-store
+    Vary:
+      description: The representation depends on `Accept`.
+      schema:
+        type: string
+        const: Accept
+    RetryAfter:
+      description: Seconds to wait before opening another stream.
+      schema:
+        type: integer
+        const: 5
+    Allow:
+      description: The methods the path allows.
+      schema:
+        type: string
+  responses:
+    MethodNotAllowed:
+      description: The path doesn't allow the method. `Allow` lists the ones it does.
+      headers:
+        Allow:
+          $ref: "#/components/headers/Allow"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            methodNotAllowed:
+              summary: A method the path doesn't allow
+              value:
+                type: about:blank
+                title: Method Not Allowed
+                status: 405
+                detail: DELETE isn't allowed on /status.
+                trace_id: 4bf92f3577b34da6a3ce929d0e0e4736
+    InternalError:
+      description: The server failed. The log holds the cause, on a line with the same `trace_id`.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
+          examples:
+            internal:
+              summary: An internal error
+              value:
+                type: about:blank
+                title: Internal Server Error
+                status: 500
+                detail: The server failed to read the ingestion status.
+                trace_id: 4bf92f3577b34da6a3ce929d0e0e4736
