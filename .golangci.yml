@@ -1,0 +1,98 @@
+# https://golangci-lint.run/usage/configuration/
+
+version: "2"
+
+run:
+  timeout: 5m
+  build-tags:
+    - e2e
+    - container
+    - bench
+    - acceptance
+
+# make fmt rewrites the files, and make lint fails on any it would change.
+formatters:
+  enable:
+    - gofmt
+    - goimports
+    - gofumpt
+    - golines
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - mingest
+    gofumpt:
+      module-path: mingest
+      extra:
+        group-params: true
+        clothe-returns: true
+    golines:
+      max-len: 80
+
+linters:
+  default: standard
+  enable:
+    - sloglint # log lines carry the trace_id
+    - spancheck # spans end and record their errors
+    - promlinter # Prometheus metric names
+    - tagliatelle # the API's snake_case JSON
+    - bodyclose # HTTP bodies are closed
+    - noctx # HTTP requests carry a context
+    - errorlint # wrapped errors are compared with errors.Is and As
+    - gosec # security
+    - revive # exported names have doc comments
+    - gocyclo # cyclomatic complexity over 10, tests included
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+    gocyclo:
+      min-complexity: 10
+
+    gosec:
+      excludes:
+        # The Dataset and the data directory are opened by path.
+        - G304
+
+    revive:
+      rules:
+        - name: exported
+
+    staticcheck:
+      # ST1000: every package starts with a doc comment. ST1003 would rename
+      # initialisms such as Id.
+      checks:
+        - all
+        - -ST1003
+
+    sloglint:
+      no-mixed-args: true
+      no-global: all
+      # The *Context methods, so every line carries the request's trace_id.
+      context: scope
+      key-naming-case: snake
+
+    spancheck:
+      checks:
+        - end
+        - record-error
+        - set-status
+
+    tagliatelle:
+      case:
+        rules:
+          json: snake
+
+  exclusions:
+    rules:
+      # run wires the service top to bottom, one dependency per step, each
+      # with its deferred close: straight-line code, not branching logic.
+      - path: cmd/mingest/main\.go
+        linters:
+          - gocyclo
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

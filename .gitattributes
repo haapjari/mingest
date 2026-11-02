@@ -1,0 +1,2 @@
+# fixtures keep their bytes: CRLF line endings are a case
+**/testdata/** -text

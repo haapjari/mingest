@@ -1,0 +1,13 @@
+no_auto_install: true
+
+pre-commit:
+  commands:
+    check:
+      run: make check test QUICK=1
+      fail_text: Fix the check above, run make fmt if formatting failed, then commit.
+
+pre-push:
+  commands:
+    ci:
+      run: make ci
+      fail_text: Fix the step above, then push again.
