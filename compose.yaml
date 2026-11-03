@@ -1,0 +1,55 @@
+name: mingest
+
+services:
+  mingest:
+    build: .
+    image: mingest:dev
+    environment:
+      MINGEST_DATASET_SOURCE: ${MINGEST_DATASET_SOURCE:-https://www.cs.cmu.edu/~enron/enron_mail_20150507.tar.gz}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
+      OTEL_SERVICE_NAME: mingest
+      # About 90% of the 512M limit below, leaving room for SQLite's heap.
+      GOMEMLIMIT: 450MiB
+    ports:
+      - 127.0.0.1:8080:8080
+      - 127.0.0.1:8081:8081
+    volumes:
+      - data:/var/lib/mingest
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on: [jaeger]
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 512M
+
+  jaeger:
+    image: jaegertracing/jaeger:2.22.0@sha256:836b967b5abcf1f7758066aa6b348619267a2f1459f72d472840570f9bd88a17
+    ports:
+      - 127.0.0.1:16686:16686
+
+  prometheus:
+    image: prom/prometheus:v3.15.1@sha256:fa3302279710be2f21a8301ec17a8b4f2301fd829bd113839b3b6b02b6f191a2
+    volumes:
+      - ./deploy/compose/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - 127.0.0.1:9090:9090
+
+  grafana:
+    image: grafana/grafana:12.4.14@sha256:ae509d9ae8c1021ca32ec370a9ca975d40165eda9fccd1e1102d317ff8787cd7
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./deploy/compose/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/compose/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - 127.0.0.1:3001:3000
+    depends_on: [prometheus]
+
+volumes:
+  data:
