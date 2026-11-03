@@ -1,0 +1,373 @@
+The hand-written fixture. The expected values in fixture.go are counted by
+hand from this table, not by the code under test.
+
+Mail file                     Message  Sender                    Rule
+allen-p/inbox/1.              M1       phillip.allen@enron.com   Copy in several folders and mailboxes
+allen-p/all_documents/1.      M1       phillip.allen@enron.com   Copy, own Message-ID
+bass-e/inbox/1.               M1       phillip.allen@enron.com   Copy in another mailbox
+allen-p/sent/2.               M2       phillip.allen@enron.com   From differs only in case and whitespace
+bass-e/sent/1.                M3       eric.bass@enron.com       Copy, LF line endings
+bass-e/sent_items/1.          M3       eric.bass@enron.com       Copy, CRLF and whitespace-only body changes
+bass-e/inbox/2.               M4       eric.bass@enron.com       identical header fields to M5
+bass-e/inbox/3.               M5       eric.bass@enron.com       identical header fields to M4, other body
+lay-k/inbox/1.                M6       (none)                    From with no @: a Message without a Sender
+lay-k/inbox/2.                M7       john..doe@enron.com       From the strict parser rejects: recovered
+lay-k/sent/1.                 M8       kenneth.lay@enron.com     To with mixed case and a duplicate
+skilling-j/inbox/1.           M9       jeff.skilling@enron.com   folded Subject: unfolded
+kean-s/inbox/1.               M10      steven.kean@enron.com     colon-less header line: skipped
+kean-s/inbox/2.               M11      steven.kean@enron.com     no empty line: all header, empty body
+skilling-j/inbox/2.           M12      sally.beck@enron.com      RFC 2047 Subject in UTF-8: decoded
+skilling-j/inbox/3.           M13      vince.kaminski@enron.com  RFC 2047 Subject in ISO-8859-1: decoded
+skilling-j/inbox/4.           M14      mark.taylor@enron.com     RFC 2047 Subject in KOI8-R: kept as written
+skilling-j/inbox/5.           M15      scott.neal@enron.com      RFC 2047 Subject in ANSI_X3.4-1968, an alias: decoded
+skilling-j/inbox/6.           M16      susan.scott@enron.com     RFC 2047 word with no charset: kept as written
+kean-s/inbox/3.               M17      louise.kitchen@enron.com  non-UTF-8 byte in the Subject
+lay-k/inbox/3.                M18      greg.whalley@enron.com    the 1979 placeholder Date
+kean-s/sent/1.                M19      richard.shapiro@enron.com Bcc copies Cc
+
+22 Mail files, 19 Messages, 14 Senders, 1 Message without a Sender.
+
+Top Senders: eric.bass 3; phillip.allen 2, steven.kean 2; then the senders
+with 1, by address: greg.whalley, jeff.skilling, john..doe, kenneth.lay,
+louise.kitchen, mark.taylor, richard.shapiro. sally.beck, scott.neal,
+susan.scott and vince.kaminski also have 1: the tie at the 10th and 11th
+place goes to richard.shapiro by address.
+-- allen-p/inbox/1. --
+Message-ID: <1001.JavaMail.evans@thyme>
+Date: Mon, 14 May 2001 16:39:00 -0700 (PDT)
+From: phillip.allen@enron.com
+To: tim.belden@enron.com
+Subject: Forecast for May
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Phillip_Allen_Jan2002_1\Allen, Phillip K.\Inbox
+X-FileName: fixture.nsf
+
+Tim,
+
+Here is our forecast for May.
+
+Phillip
+-- allen-p/all_documents/1. --
+Message-ID: <1002.JavaMail.evans@thyme>
+Date: Mon, 14 May 2001 16:39:00 -0700 (PDT)
+From: phillip.allen@enron.com
+To: tim.belden@enron.com
+Subject: Forecast for May
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Phillip_Allen_Dec2000\Notes Folders\All documents
+X-FileName: fixture.nsf
+
+Tim,
+
+Here is our forecast for May.
+
+Phillip
+-- bass-e/inbox/1. --
+Message-ID: <1003.JavaMail.evans@thyme>
+Date: Mon, 14 May 2001 16:39:00 -0700 (PDT)
+From: phillip.allen@enron.com
+To: tim.belden@enron.com
+Subject: Forecast for May
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Eric_Bass_Jun2001\Notes Folders\Inbox
+X-FileName: fixture.nsf
+
+Tim,
+
+Here is our forecast for May.
+
+Phillip
+-- allen-p/sent/2. --
+Message-ID: <1004.JavaMail.evans@thyme>
+Date: Tue, 15 May 2001 09:12:00 -0700 (PDT)
+From:   Phillip.Allen@ENRON.com 
+To: john.lavorato@enron.com
+Subject: Re: West desk
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Phillip_Allen_Jan2002_1\Allen, Phillip K.\Sent
+X-FileName: fixture.nsf
+
+John,
+
+The west desk numbers are final.
+-- bass-e/sent/1. --
+Message-ID: <2001.JavaMail.evans@thyme>
+Date: Wed, 16 May 2001 11:00:00 -0700 (PDT)
+From: eric.bass@enron.com
+To: matthew.lenhart@enron.com
+Subject: Game tonight
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Eric_Bass_Jun2001\Notes Folders\Sent
+X-FileName: fixture.nsf
+
+Matt,
+
+Are you in for the game tonight?
+
+Eric
+-- bass-e/sent_items/1. --
+Message-ID: <2002.JavaMail.evans@thyme>
+Date: Wed, 16 May 2001 11:00:00 -0700 (PDT)
+From: eric.bass@enron.com
+To: matthew.lenhart@enron.com
+Subject: Game tonight
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \ExMerge - Bass, Eric\Sent Items
+X-FileName: fixture.nsf
+
+Matt,  
+
+   Are you   in for	the game tonight?
+
+Eric
+
+
+
+-- bass-e/inbox/2. --
+Message-ID: <2003.JavaMail.evans@thyme>
+Date: Thu, 17 May 2001 08:30:00 -0700 (PDT)
+From: eric.bass@enron.com
+To: brian.hoskins@enron.com
+Subject: Fantasy league
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Eric_Bass_Jun2001\Notes Folders\Inbox
+X-FileName: fixture.nsf
+
+Brian,
+
+The draft is on Sunday.
+-- bass-e/inbox/3. --
+Message-ID: <2004.JavaMail.evans@thyme>
+Date: Thu, 17 May 2001 08:30:00 -0700 (PDT)
+From: eric.bass@enron.com
+To: brian.hoskins@enron.com
+Subject: Fantasy league
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Eric_Bass_Jun2001\Notes Folders\Inbox
+X-FileName: fixture.nsf
+
+Brian,
+
+The draft moved to Monday.
+-- lay-k/inbox/1. --
+Message-ID: <3001.JavaMail.evans@thyme>
+Date: Fri, 18 May 2001 07:00:00 -0700 (PDT)
+From: pep <performance.>
+To: kenneth.lay@enron.com
+Subject: Performance review due
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Lay, Kenneth\Inbox
+X-FileName: fixture.nsf
+
+Your performance review is due on Friday.
+-- lay-k/inbox/2. --
+Message-ID: <3002.JavaMail.evans@thyme>
+Date: Fri, 18 May 2001 10:15:00 -0700 (PDT)
+From: john..doe@enron.com
+To: kenneth.lay@enron.com
+Subject: Board meeting
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Lay, Kenneth\Inbox
+X-FileName: fixture.nsf
+
+Ken,
+
+The board meets at 10.
+-- lay-k/sent/1. --
+Message-ID: <3003.JavaMail.evans@thyme>
+Date: Mon, 21 May 2001 09:00:00 -0700 (PDT)
+From: kenneth.lay@enron.com
+To: Jeff.Dasovich@ENRON.com, susan.mara@enron.com, jeff.dasovich@enron.com
+Subject: To all employees
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Lay, Kenneth\Sent
+X-FileName: fixture.nsf
+
+Thank you for your hard work.
+-- skilling-j/inbox/1. --
+Message-ID: <4001.JavaMail.evans@thyme>
+Date: Tue, 22 May 2001 14:00:00 -0700 (PDT)
+From: jeff.skilling@enron.com
+To: greg.whalley@enron.com
+Subject: Quarterly
+ numbers
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Skilling, Jeff\Inbox
+X-FileName: fixture.nsf
+
+Greg,
+
+The quarterly numbers look good.
+-- kean-s/inbox/1. --
+Message-ID: <5001.JavaMail.evans@thyme>
+Date: Wed, 23 May 2001 13:20:00 -0700 (PDT)
+From: steven.kean@enron.com
+To: richard.shapiro@enron.com
+Subject: California update
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+this header line has no colon
+X-Folder: \Kean, Steven\Inbox
+X-FileName: fixture.nsf
+
+Rick,
+
+The update is attached.
+-- kean-s/inbox/2. --
+Message-ID: <5002.JavaMail.evans@thyme>
+Date: Thu, 24 May 2001 15:45:00 -0700 (PDT)
+From: steven.kean@enron.com
+To: jeff.dasovich@enron.com
+Subject: No body
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Kean, Steven\Inbox
+X-FileName: fixture.nsf
+-- skilling-j/inbox/2. --
+Message-ID: <4002.JavaMail.evans@thyme>
+Date: Fri, 25 May 2001 09:30:00 -0700 (PDT)
+From: sally.beck@enron.com
+To: jeff.skilling@enron.com
+Subject: =?utf-8?q?Caf=C3=A9_meeting?=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Skilling, Jeff\Inbox
+X-FileName: fixture.nsf
+
+Jeff,
+
+Shall we meet at the cafe?
+-- skilling-j/inbox/3. --
+Message-ID: <4003.JavaMail.evans@thyme>
+Date: Fri, 25 May 2001 10:30:00 -0700 (PDT)
+From: vince.kaminski@enron.com
+To: jeff.skilling@enron.com
+Subject: =?iso-8859-1?q?R=E9sum=E9_review?=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Skilling, Jeff\Inbox
+X-FileName: fixture.nsf
+
+Jeff,
+
+The resumes are ready for review.
+-- skilling-j/inbox/4. --
+Message-ID: <4004.JavaMail.evans@thyme>
+Date: Fri, 25 May 2001 11:30:00 -0700 (PDT)
+From: mark.taylor@enron.com
+To: jeff.skilling@enron.com
+Subject: =?koi8-r?b?8NLJ18XU?=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Skilling, Jeff\Inbox
+X-FileName: fixture.nsf
+
+Jeff,
+
+A note from the Moscow office.
+-- skilling-j/inbox/5. --
+Message-ID: <4005.JavaMail.evans@thyme>
+Date: Sat, 26 May 2001 09:15:00 -0700 (PDT)
+From: scott.neal@enron.com
+To: jeff.skilling@enron.com
+Subject: =?ANSI_X3.4-1968?Q?Gas_storage_report?=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Skilling, Jeff\Inbox
+X-FileName: fixture.nsf
+
+Jeff,
+
+The storage numbers are attached.
+-- skilling-j/inbox/6. --
+Message-ID: <4006.JavaMail.evans@thyme>
+Date: Sun, 27 May 2001 14:45:00 -0700 (PDT)
+From: susan.scott@enron.com
+To: jeff.skilling@enron.com
+Subject: =??Q?=93Weekly=94_numbers?=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Skilling, Jeff\Inbox
+X-FileName: fixture.nsf
+
+Jeff,
+
+The weekly numbers, as promised.
+-- kean-s/inbox/3. --
+Message-ID: <5003.JavaMail.evans@thyme>
+Date: Mon, 28 May 2001 08:00:00 -0700 (PDT)
+From: louise.kitchen@enron.com
+To: steven.kean@enron.com
+Subject: Café order
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Kean, Steven\Inbox
+X-FileName: fixture.nsf
+
+Steve,
+
+The coffee order is in.
+-- lay-k/inbox/3. --
+Message-ID: <3004.JavaMail.evans@thyme>
+Date: Mon, 31 Dec 1979 16:00:00 -0800 (PST)
+From: greg.whalley@enron.com
+To: kenneth.lay@enron.com
+Subject: Old calendar entry
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Lay, Kenneth\Inbox
+X-FileName: fixture.nsf
+
+Ken,
+
+This entry has no real date.
+-- kean-s/sent/1. --
+Message-ID: <5004.JavaMail.evans@thyme>
+Date: Tue, 29 May 2001 12:00:00 -0700 (PDT)
+From: richard.shapiro@enron.com
+To: steven.kean@enron.com
+Cc: james.steffes@enron.com, linda.robertson@enron.com
+Subject: Regulatory filing
+Bcc: james.steffes@enron.com, linda.robertson@enron.com
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Folder: \Kean, Steven\Sent
+X-FileName: fixture.nsf
+
+Steve,
+
+The filing went out today.
